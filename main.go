@@ -6,10 +6,12 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/delba/requestbin/db"
 	"github.com/delba/requestbin/model"
+	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 )
+
+var db gorm.DB
 
 func handle(err error) {
 	if err != nil {
@@ -18,11 +20,10 @@ func handle(err error) {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	requests, err := db.GetAllRequests()
-	handle(err)
+	var requests []model.Request
+	db.Find(&requests)
 
-	templatePath := path.Join("templates", "index.html")
-	t, err := template.ParseFiles(templatePath)
+	t, err := template.ParseFiles(path.Join("templates", "index.html"))
 	handle(err)
 
 	err = t.Execute(w, requests)
@@ -34,8 +35,8 @@ func create(w http.ResponseWriter, r *http.Request) {
 	handle(err)
 	defer r.Body.Close()
 
-	err = db.CreateRequest(model.Request{Body: body})
-	handle(err)
+	request := model.Request{Body: body}
+	db.Create(&request)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +48,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	default:
 		index(w, r)
 	}
+}
+
+func init() {
+	db = func() gorm.DB {
+		db, err := gorm.Open("postgres", "dbname=requestbin sslmode=disable")
+		handle(err)
+		return db
+	}()
 }
 
 func main() {
