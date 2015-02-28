@@ -55,7 +55,15 @@ func GetAllRequests() ([]model.Request, error) {
 
 func CreateRequest(r model.Request) error {
 	var err error
+
 	rows, err := db.Query(`INSERT INTO requests (body) VALUES ($1)`, r.Body)
 	defer rows.Close()
+
+	return err
+}
+
+func DeleteAll() error {
+	_, err := db.Query(`TRUNCATE FROM requests`)
+
 	return err
 }
