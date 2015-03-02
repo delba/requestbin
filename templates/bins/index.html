@@ -13,6 +13,10 @@
   </head>
   <body class="container">
     <h1>RequestBin</h1>
+    <form action="/bins" method="POST">
+      <button type="submit" class="btn btn-primary">Create a RequestBin</button>
+    </form>
+
     {{range .}}
     <article>
       <pre><code class="json">{{.FormattedBody}}</code></pre>

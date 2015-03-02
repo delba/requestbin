@@ -25,7 +25,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	var requests []model.Request
 	db.Find(&requests)
 
-	t, err := template.ParseFiles(path.Join("templates", "index.html"))
+	t, err := template.ParseFiles(path.Join("templates", "bins", "index.html"))
 	handle(err)
 
 	err = t.Execute(w, requests)
