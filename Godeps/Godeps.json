@@ -1,0 +1,15 @@
+{
+	"ImportPath": "github.com/delba/requestbin",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Rev": "aa0a4012be7f21454efbfe42ab22fcf9caf44d5b"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-28-g72d960f",
+			"Rev": "72d960fe96ac86dfd376b0de7ca81c0334838d0b"
+		}
+	]
+}

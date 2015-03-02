@@ -3,12 +3,14 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"text/template"
 
+	_ "github.com/lib/pq"
+
 	"github.com/delba/requestbin/model"
 	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
 )
 
 var db gorm.DB
@@ -51,14 +53,26 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
+	url := os.Getenv("DATABASE_URL")
+	if url == "" {
+		url = "dbname=requestbin sslmode=disable"
+	}
+
 	db = func() gorm.DB {
-		db, err := gorm.Open("postgres", "dbname=requestbin sslmode=disable")
+		db, err := gorm.Open("postgres", url)
 		handle(err)
 		return db
 	}()
+
+	db.CreateTable(&model.Request{})
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+port, nil)
 }
