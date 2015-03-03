@@ -60,7 +60,7 @@ func main() {
 	r.HandleFunc("/{token}", RequestsCreate).Methods("POST")
 
 	http.Handle("/", r)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+port, nil)
 }
 
 func ServeFileHandler(w http.ResponseWriter, r *http.Request) {
