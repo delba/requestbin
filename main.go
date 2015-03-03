@@ -37,8 +37,8 @@ func init() {
 		return db
 	}()
 
-	// db.DropTable(&model.Bin{})
-	// db.DropTable(&model.Request{})
+	db.DropTable(&model.Bin{})
+	db.DropTable(&model.Request{})
 	db.CreateTable(&model.Bin{})
 	db.CreateTable(&model.Request{})
 
