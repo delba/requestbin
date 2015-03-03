@@ -2,4 +2,11 @@
 <form action="/bins" method="POST">
   <input type="submit" value="Create a RequestBin" class="btn btn-primary">
 </form>
+<ul>
+  <h4>Bins:</h4>
+  {{range .}}
+  <li><a href="/{{.}}">{{.}}</a></li>
+  {{end}}
+</ul>
 {{end}}
+

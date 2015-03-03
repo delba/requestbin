@@ -1,5 +1,6 @@
 {{define "main"}}
-{{range .}}
+<h3>Bin {{.Bin.Token}}</h3>
+{{range .Requests}}
 <article>
   <pre><code class="json">{{.FormattedBody}}</code></pre>
 </article>

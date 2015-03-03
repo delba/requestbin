@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"text/template"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
 	"github.com/delba/requestbin/model"
@@ -17,6 +17,7 @@ import (
 )
 
 var db gorm.DB
+var store = sessions.NewCookieStore([]byte("something-very-secret"))
 
 func handle(err error) {
 	if err != nil {
@@ -52,36 +53,31 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", BinsIndex).
-		Methods("GET")
-
-	r.HandleFunc("/bins", BinsCreate).
-		Methods("POST")
-
-	r.HandleFunc("/{token}", BinsShow).
-		Methods("GET")
-
-	r.HandleFunc("/{token}", RequestsCreate).
-		Methods("POST")
+	r.HandleFunc("/", BinsIndex).Methods("GET")
+	r.HandleFunc("/favicon.ico", ServeFileHandler).Methods("GET")
+	r.HandleFunc("/bins", BinsCreate).Methods("POST")
+	r.HandleFunc("/{token}", BinsShow).Methods("GET")
+	r.HandleFunc("/{token}", RequestsCreate).Methods("POST")
 
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
 
+func ServeFileHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Serve static file")
+}
+
 func BinsIndex(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("bins#index")
 
-	cookie, _ := r.Cookie("tokens")
-	if cookie == nil {
-		cookie = &http.Cookie{Name: "tokens"}
-	}
+	tokens := getTokens(r)
 
 	layout := path.Join("templates", "layouts", "application.html")
 	index := path.Join("templates", "bins", "index.html")
 	t, err := template.ParseFiles(layout, index)
 	handle(err)
 
-	err = t.Execute(w, nil)
+	err = t.Execute(w, tokens)
 	handle(err)
 }
 
@@ -91,16 +87,7 @@ func BinsCreate(w http.ResponseWriter, r *http.Request) {
 	var bin model.Bin
 	db.Create(&bin)
 
-	cookie, _ := r.Cookie("tokens")
-	if cookie == nil {
-		cookie = &http.Cookie{Name: "tokens"}
-	}
-
-	fmt.Println(cookie.Value)
-	cookie.Value = strings.Join([]string{cookie.Value, bin.Token}, ", ")
-	fmt.Println(cookie.Value)
-
-	http.SetCookie(w, cookie)
+	addToken(bin.Token, w, r)
 
 	http.Redirect(w, r, "/"+bin.Token, 302)
 }
@@ -108,8 +95,9 @@ func BinsCreate(w http.ResponseWriter, r *http.Request) {
 func BinsShow(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("bins#show")
 
+	token := mux.Vars(r)["token"]
+	fmt.Println(token)
 	bin := findBin(r)
-	fmt.Println(bin)
 
 	var requests []model.Request
 	db.Model(&bin).Related(&requests)
@@ -119,7 +107,14 @@ func BinsShow(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles(layout, show)
 	handle(err)
 
-	err = t.Execute(w, requests)
+	type Data struct {
+		Bin      model.Bin
+		Requests []model.Request
+	}
+
+	data := Data{Bin: bin, Requests: requests}
+
+	err = t.Execute(w, data)
 	handle(err)
 }
 
@@ -147,4 +142,26 @@ func findBin(r *http.Request) model.Bin {
 	db.Where(&model.Bin{Token: token}).First(&bin)
 
 	return bin
+}
+
+func getTokens(r *http.Request) []string {
+	sessions, _ := store.Get(r, "session-name")
+
+	tokens := sessions.Values["tokens"]
+
+	if tokens == nil {
+		tokens = []string{}
+	}
+
+	return tokens.([]string)
+}
+
+func addToken(token string, w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "session-name")
+
+	tokens := append(getTokens(r), token)
+
+	session.Values["tokens"] = tokens
+
+	session.Save(r, w)
 }
