@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"text/template"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 
 	"github.com/delba/requestbin/model"
@@ -17,7 +17,6 @@ import (
 )
 
 var db gorm.DB
-var store = sessions.NewCookieStore([]byte("something-very-secret"))
 
 func handle(err error) {
 	if err != nil {
@@ -90,7 +89,6 @@ func BinsCreate(w http.ResponseWriter, r *http.Request) {
 	db.Create(&bin)
 
 	addToken(bin.Token, w, r)
-
 	http.Redirect(w, r, "/"+bin.Token, 302)
 }
 
@@ -149,23 +147,25 @@ func findBin(r *http.Request) model.Bin {
 }
 
 func getTokens(r *http.Request) []string {
-	sessions, _ := store.Get(r, "session-name")
+	var tokens []string
 
-	tokens := sessions.Values["tokens"]
-
-	if tokens == nil {
-		tokens = []string{}
+	cookie, err := r.Cookie("tokens")
+	if err != nil {
+		return tokens
 	}
 
-	return tokens.([]string)
+	tokens = strings.Split(cookie.Value, ",")
+	return tokens
 }
 
 func addToken(token string, w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "session-name")
+	tokens := getTokens(r)
+	tokens = append(tokens, token)
 
-	tokens := append(getTokens(r), token)
+	cookie := &http.Cookie{
+		Name:  "tokens",
+		Value: strings.Join(tokens, ","),
+	}
 
-	session.Values["tokens"] = tokens
-
-	session.Save(r, w)
+	http.SetCookie(w, cookie)
 }
