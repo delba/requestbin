@@ -37,8 +37,8 @@ func init() {
 		return db
 	}()
 
-	db.DropTable(&model.Bin{})
-	db.DropTable(&model.Request{})
+	// db.DropTable(&model.Bin{})
+	// db.DropTable(&model.Request{})
 	db.CreateTable(&model.Bin{})
 	db.CreateTable(&model.Request{})
 
@@ -72,9 +72,11 @@ func BinsIndex(w http.ResponseWriter, r *http.Request) {
 
 	tokens := getTokens(r)
 
-	layout := path.Join("templates", "layouts", "application.html")
-	index := path.Join("templates", "bins", "index.html")
-	t, err := template.ParseFiles(layout, index)
+	files := []string{
+		path.Join("templates", "layouts", "application.html"),
+		path.Join("templates", "bins", "index.html"),
+	}
+	t, err := template.ParseFiles(files...)
 	handle(err)
 
 	err = t.Execute(w, tokens)
@@ -102,9 +104,11 @@ func BinsShow(w http.ResponseWriter, r *http.Request) {
 	var requests []model.Request
 	db.Model(&bin).Related(&requests)
 
-	layout := path.Join("templates", "layouts", "application.html")
-	show := path.Join("templates", "bins", "show.html")
-	t, err := template.ParseFiles(layout, show)
+	files := []string{
+		path.Join("templates", "layouts", "application.html"),
+		path.Join("templates", "bins", "show.html"),
+	}
+	t, err := template.ParseFiles(files...)
 	handle(err)
 
 	type Data struct {
